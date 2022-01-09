@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+    </head>
+
+    <body>
+        <canvas id="ballCanvas" width="500" height="500"></canvas>
+        <script>
+            var canvas, canvasContext;
+            const FPS = 60;
+            const NUM_BALLS = 25;
+            const BALL_SPEED = 2.5 * 60 / FPS;
+            const BALL_RADIUS = 10;
+
+            var balls = new Array();
+
+            window.onload = function() {
+                canvas = document.getElementById("ballCanvas");
+                canvasContext = canvas.getContext("2d");
+
+                colorRect(0,0,canvas.width,canvas.height,"yellow");
+                
+                // Initialize balls:
+                var x, y, v_x, v_y, i, j, flag;
+
+                for (i=0; i<NUM_BALLS; i++) {
+                    // Initialize center coordinates:
+                    while (true) {
+                        x = canvas.width * 0.1 + Math.floor(Math.random() * canvas.width * 0.8);
+                        y = canvas.height * 0.1 + Math.floor(Math.random() * canvas.height * 0.8);
+                        flag = true;
+                        for (j=0; j<i; j++) {
+                            if (Math.sqrt((x-balls[j].x)**2 + (y-balls[j].y)**2) < 2.2*BALL_RADIUS)
+                                flag = false;
+                        }
+
+                        if (flag)
+                            break;
+                    }
+
+                    // Calculate initial velocities:
+                    v_x = 2*Math.random()-1;
+                    v_y = 2*Math.random()-1;
+                    v_x = BALL_SPEED * v_x / Math.sqrt(v_x**2 + v_y**2);
+                    v_y = BALL_SPEED * v_y / Math.sqrt(v_x**2 + v_y**2);
+
+                    // Create new ball:
+                    balls[i] = new Ball(x,y,v_x,v_y,BALL_RADIUS,"red");
+                }
+
+                setInterval(updateCanvas, 1000/FPS);
+                
+            }
+            
+            var Ball = function(centerX, centerY, speedX, speedY, radius, fillColor) {
+                this.x = centerX;
+                this.y = centerY;
+                this.v_x = speedX;
+                this.v_y = speedY;
+                this.r = radius;
+                this.color = fillColor;
+
+                this.draw();
+            }
+
+            Ball.prototype.draw = function() {
+                canvasContext.fillStyle = this.color;
+                canvasContext.beginPath();
+                canvasContext.arc(this.x, this.y, this.r, 0, 2*Math.PI, true);
+                canvasContext.fill();
+            }
+
+            Ball.prototype.updatePosition = function() {
+                this.x += this.v_x;
+                this.y += this.v_y;
+
+                // Check for collision with boundaries:
+                if (this.x - this.r <= 0) {
+                    this.v_x *= -1;
+                    this.x = this.r;
+                }
+                
+                if (this.x + this.r >= canvas.width) {
+                    this.v_x *= -1;
+                    this.x = canvas.width - this.r;
+                }
+                
+                if (this.y - this.r <= 0) {
+                    this.v_y *= -1;
+                    this.y = this.r;
+                }
+                
+                if (this.y + this.r >= canvas.height) {
+                    this.v_y *= -1;
+                    this.y = canvas.height - this.r;
+                }
+            } 
+            
+            function clearCanvas() {
+                canvasContext.clearRect(0,0,canvas.width,canvas.height);
+            }
+
+            function colorRect(x, y, w, h, color) {
+                canvasContext.fillStyle = color;
+                canvasContext.fillRect(x,y,w,h);
+            }
+
+            function eventBallCollision(i,j) {
+                var delta, x_i, x_j, y_i, y_j;
+                var d = (balls[i].x - balls[j].x)**2 + (balls[i].y - balls[j].y)**2;
+                
+                if (d <= (balls[i].r + balls[j].r)**2) {
+
+                    delta = (balls[j].r + balls[i].r)/(2*Math.sqrt(d)) - 0.5;
+                    // Update coordinates:
+                    x_j = balls[j].x + (balls[j].x - balls[i].x)*delta;
+                    x_i = balls[i].x + (balls[j].x - balls[i].x)*delta;
+                    y_j = balls[j].y + (balls[j].y - balls[i].y)*delta;
+                    y_i = balls[i].y + (balls[j].y - balls[i].y)*delta;
+
+                    balls[i].x = x_i;
+                    balls[i].y = y_i;
+                    balls[j].x = x_j;
+                    balls[j].y = y_j;
+                    return true;
+                }
+                else
+                    return false;
+            }
+
+            function velocityUpdateAfterCollision(i,j) {
+                var r_x = balls[j].x - balls[i].x;
+                var r_y = balls[j].y - balls[i].y;
+                var r_len = Math.sqrt(r_x**2 + r_y**2);
+                // Calculate velocities along axis of collision:
+                var v1_r_x = (balls[i].v_x * r_x + balls[i].v_y * r_y)/r_len;
+                var v1_r_y = (-balls[i].v_x * r_y + balls[i].v_y * r_x)/r_len;
+                var v2_r_x = (balls[j].v_x * r_x + balls[j].v_y * r_y)/r_len;
+                var v2_r_y = (-balls[j].v_x * r_y + balls[j].v_y * r_x)/r_len;
+                // Update velocities:
+                balls[i].v_x = (v2_r_x * r_x - v1_r_y * r_y)/r_len;
+                balls[i].v_y = (v2_r_x * r_y + v1_r_y * r_x)/r_len;
+                balls[j].v_x = (v1_r_x * r_x - v2_r_y * r_y)/r_len;
+                balls[j].v_y = (v1_r_x * r_y + v2_r_y * r_x)/r_len;
+            }
+
+            function updateCanvas() {
+                for (var i=0; i<NUM_BALLS; i++) {
+                    balls[i].updatePosition();
+                }
+                
+                for (i=0; i<NUM_BALLS; i++){
+                    for(var j=0; j<i; j++){
+                        if (eventBallCollision(i,j)){
+                            velocityUpdateAfterCollision(i,j);
+                        }
+                    }
+                }
+                
+                // Clear canvas:
+                //clearCanvas();
+                colorRect(0,0,canvas.width,canvas.height,"yellow");
+
+                for (i=0; i<NUM_BALLS; i++){
+                    balls[i].draw();
+                }
+            }
+        </script>
+    </body>
+</html>
