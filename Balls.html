@@ -13,7 +13,7 @@
             const BALL_RADIUS = 10;
             const NUM_BALLS = 50;
             const UPDATES_PER_FRAME = BALL_RADIUS;
-            const BALL_SPEED = 0.3;
+            const BALL_SPEED = 0.25;
             
             var balls = new Array();
 
@@ -27,6 +27,7 @@
                 var x, y, v_x, v_y, i, j, flag;
 
                 for (i=0; i<NUM_BALLS; i++) {
+
                     // Initialize center coordinates:
                     while (true) {
                         x = canvas.width * 0.1 + Math.floor(Math.random() * canvas.width * 0.8);
@@ -108,20 +109,18 @@
             }
 
             function eventBallCollision(i,j) {
-                var delta1, delta2, delta, v1_x, v1_y, v2_x, v2_y, v_norm, k, x_i, x_j, y_i, y_j;
+                var delta1, delta2, delta, v1_x, v1_y, v2_x, v2_y, v_norm, k, s;
                 var d = (balls[i].x - balls[j].x)**2 + (balls[i].y - balls[j].y)**2;
                 
                 if (d <= (balls[i].r + balls[j].r)**2) {
 
                     // Update ball i and j's position so that they don't overlap
-
-                    v1_x = balls[i].v_x / Math.sqrt(balls[i].v_x**2 + balls[i].v_y**2);
-                    v1_y = balls[i].v_y / Math.sqrt(balls[i].v_x**2 + balls[i].v_y**2);
-                    v2_x = balls[j].v_x / Math.sqrt(balls[j].v_x**2 + balls[j].v_y**2);
-                    v2_y = balls[j].v_y / Math.sqrt(balls[j].v_x**2 + balls[j].v_y**2);
+                    v1_x = balls[i].v_x;
+                    v1_y = balls[i].v_y;
+                    v2_x = balls[j].v_x;
+                    v2_y = balls[j].v_y;
 
                     v_norm = Math.sqrt((v1_x-v2_x)**2 + (v1_y-v2_y)**2);
-                    
                     k = (v2_x - v1_x) * (balls[j].x - balls[i].x) + (v2_y - v1_y) * (balls[j].y - balls[i].y);
 
                     delta1 = (-k - Math.sqrt(k**2 + ((balls[i].r + balls[j].r)**2 - d)*v_norm))/v_norm;
